@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, Contact, FolderKanban, KanbanSquare, LayoutTemplate, LogOut, Menu, Workflow, X,
+  ChevronLeft, ChevronRight, Contact, FolderKanban, Info, KanbanSquare, LayoutTemplate, LogOut, Menu, Workflow, X,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
@@ -23,6 +23,7 @@ import TemplatesPage from './pages/TemplatesPage.jsx';
 import ClientsPage from './pages/ClientsPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
+import AboutPage from './pages/AboutPage.jsx';
 
 import { getFullName } from './utils/taskLogic.js';
 import { uploadTaskImage } from './utils/uploadImage.js';
@@ -153,6 +154,8 @@ function AppShell() {
         );
       case 'profile':
         return <ProfilePage />;
+      case 'about':
+        return <AboutPage />;
       default:
         return null;
     }
@@ -240,6 +243,13 @@ function AppShell() {
             <span className="font-semibold text-lg tracking-wide truncate lg:text-xs lg:font-bold lg:uppercase lg:tracking-wide lg:text-slate-400 lg:dark:text-slate-500">{currentProject?.name || 'ContaFlow AI'}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => goToTab('about')}
+              title="Sobre"
+              className="p-2 rounded-full hover:bg-white/10 lg:hover:bg-slate-100 lg:dark:hover:bg-slate-700 transition-colors"
+            >
+              <Info className="w-5 h-5" />
+            </button>
             <NotificationBell tasks={tasks} users={projectUsers} onOpenTask={openEditTask} />
             <button onClick={() => goToTab('profile')} className="lg:hidden"><Avatar profile={profile} size="sm" /></button>
           </div>
