@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
-import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, getFullName } from '../utils/taskLogic.js';
+import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, formatDate, getFullName, nextTemplateDueDate } from '../utils/taskLogic.js';
 import ClientModal from './ClientModal.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
 import TaskComments from './TaskComments.jsx';
@@ -67,13 +67,34 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
 
   const applyTemplate = (templateId) => {
     const tpl = templates.find((t) => t.id === templateId);
+    setForm((f) => {
+      const recurrenceEnabled = tpl ? !!tpl.recurrence?.enabled : f.recurrenceEnabled;
+      const recurrenceDay = tpl?.recurrence?.dayOfMonth || f.recurrenceDay;
+      return {
+        ...f,
+        templateId,
+        title: f.title || tpl?.name || '',
+        color: tpl?.color || f.color,
+        recurrenceEnabled,
+        recurrenceDay,
+        dueDate: recurrenceEnabled ? nextTemplateDueDate(new Date(), recurrenceDay) : f.dueDate,
+      };
+    });
+  };
+
+  const setRecurrenceEnabled = (enabled) => {
     setForm((f) => ({
       ...f,
-      templateId,
-      title: f.title || tpl?.name || '',
-      color: tpl?.color || f.color,
-      recurrenceEnabled: tpl ? !!tpl.recurrence?.enabled : f.recurrenceEnabled,
-      recurrenceDay: tpl?.recurrence?.dayOfMonth || f.recurrenceDay,
+      recurrenceEnabled: enabled,
+      dueDate: enabled ? nextTemplateDueDate(new Date(), f.recurrenceDay) : f.dueDate,
+    }));
+  };
+
+  const setRecurrenceDay = (day) => {
+    setForm((f) => ({
+      ...f,
+      recurrenceDay: day,
+      dueDate: f.recurrenceEnabled ? nextTemplateDueDate(new Date(), Number(day) || 1) : f.dueDate,
     }));
   };
 
@@ -188,14 +209,23 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
                 </select>
               </SidebarField>
 
-              <SidebarField label="Data de Entrega">
-                <input
-                  type="date"
-                  required
-                  value={form.dueDate}
-                  onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                  className={fieldClass}
-                />
+              <SidebarField
+                label="Data de Entrega"
+                hint={form.recurrenceEnabled ? 'Calculada automaticamente a partir da recorrência (dia definido, do mês seguinte).' : undefined}
+              >
+                {form.recurrenceEnabled ? (
+                  <div className={`${fieldClass} bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed`}>
+                    {formatDate(form.dueDate)}
+                  </div>
+                ) : (
+                  <input
+                    type="date"
+                    required
+                    value={form.dueDate}
+                    onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+                    className={fieldClass}
+                  />
+                )}
               </SidebarField>
 
               <SidebarField label="Depende de" hint="Enquanto a tarefa selecionada não estiver Terminada, esta fica Bloqueada.">
@@ -250,7 +280,7 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
                   <input
                     type="checkbox"
                     checked={form.recurrenceEnabled}
-                    onChange={(e) => setForm((f) => ({ ...f, recurrenceEnabled: e.target.checked }))}
+                    onChange={(e) => setRecurrenceEnabled(e.target.checked)}
                     className="w-4 h-4 rounded accent-indigo-600"
                   />
                   Tarefa cíclica (recorrente)
@@ -263,7 +293,7 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
                       min={1}
                       max={28}
                       value={form.recurrenceDay}
-                      onChange={(e) => setForm((f) => ({ ...f, recurrenceDay: e.target.value }))}
+                      onChange={(e) => setRecurrenceDay(e.target.value)}
                       className="w-16 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-center"
                     />
                     de cada mês

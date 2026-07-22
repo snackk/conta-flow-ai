@@ -51,10 +51,27 @@ export function isTaskDone(task) {
   return task.progress === STAGES.DONE;
 }
 
+/** Formats a local Date as YYYY-MM-DD without going through UTC (avoids the off-by-one that `toISOString()` causes in timezones ahead of UTC). */
+function toDateStr(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function nextDueDateForCycle(referenceDate, dayOfMonth) {
   const d = new Date(referenceDate);
-  const due = new Date(d.getFullYear(), d.getMonth(), dayOfMonth);
-  return due.toISOString().slice(0, 10);
+  return toDateStr(new Date(d.getFullYear(), d.getMonth(), dayOfMonth));
+}
+
+/**
+ * Due date for a newly created recurring task: the given day of the month
+ * *following* referenceDate's month (e.g. created in July for day 5 → 5 Aug),
+ * since a recurring task is prepared ahead of its next occurrence.
+ */
+export function nextTemplateDueDate(referenceDate, dayOfMonth) {
+  const d = new Date(referenceDate);
+  return toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, dayOfMonth));
 }
 
 /**
