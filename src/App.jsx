@@ -10,6 +10,7 @@ import { useUsers } from './hooks/useUsers.js';
 import { useTaskTemplates } from './hooks/useTaskTemplates.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useClients } from './hooks/useClients.js';
+import { addTaskComment } from './hooks/useComments.js';
 
 import Avatar from './components/Avatar.jsx';
 import NavItem from './components/NavItem.jsx';
@@ -25,7 +26,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 
-import { getFullName } from './utils/taskLogic.js';
+import { formatCompletionComment, getFullName } from './utils/taskLogic.js';
 import { uploadTaskImage } from './utils/uploadImage.js';
 
 const SIDEBAR_COLLAPSED_KEY = 'contaflow:sidebarCollapsed';
@@ -97,6 +98,12 @@ function AppShell() {
 
   const handleMoveTask = async (taskId, patch) => {
     await updateTask(taskId, patch);
+    if (patch.progress === 'done') {
+      const task = tasksById.get(taskId);
+      if (task?.templateId) {
+        await addTaskComment(taskId, formatCompletionComment(task.title), profile);
+      }
+    }
   };
 
   const handleUploadImage = (file) => uploadTaskImage(file, profile.uid);

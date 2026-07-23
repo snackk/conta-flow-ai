@@ -4,6 +4,17 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
 
+export async function addTaskComment(taskId, text, author) {
+  await addDoc(collection(db, 'tasks', taskId, 'comments'), {
+    text,
+    authorId: author.uid,
+    authorFirstName: author.firstName || '',
+    authorLastName: author.lastName || '',
+    authorPhotoURL: author.photoURL || '',
+    createdAt: serverTimestamp(),
+  });
+}
+
 export function useComments(taskId) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(!!taskId);
@@ -26,16 +37,7 @@ export function useComments(taskId) {
     return () => unsub();
   }, [taskId]);
 
-  const addComment = async (text, author) => {
-    await addDoc(collection(db, 'tasks', taskId, 'comments'), {
-      text,
-      authorId: author.uid,
-      authorFirstName: author.firstName || '',
-      authorLastName: author.lastName || '',
-      authorPhotoURL: author.photoURL || '',
-      createdAt: serverTimestamp(),
-    });
-  };
+  const addComment = (text, author) => addTaskComment(taskId, text, author);
 
   const deleteComment = async (commentId) => {
     await deleteDoc(doc(db, 'tasks', taskId, 'comments', commentId));
