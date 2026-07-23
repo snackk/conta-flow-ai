@@ -44,22 +44,24 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // Admins can browse/act on any project's data (even ones they haven't joined) since
+    // they see the full project list and can create tasks there without being a member.
     match /taskTemplates/{templateId} {
-      allow read: if isProjectMember(resource.data.projectId);
-      allow create: if isProjectMember(request.resource.data.projectId);
-      allow update, delete: if isProjectMember(resource.data.projectId);
+      allow read: if isProjectMember(resource.data.projectId) || isAdmin();
+      allow create: if isProjectMember(request.resource.data.projectId) || isAdmin();
+      allow update, delete: if isProjectMember(resource.data.projectId) || isAdmin();
     }
 
     match /clients/{clientId} {
-      allow read: if isProjectMember(resource.data.projectId);
-      allow create: if isProjectMember(request.resource.data.projectId);
-      allow update, delete: if isProjectMember(resource.data.projectId);
+      allow read: if isProjectMember(resource.data.projectId) || isAdmin();
+      allow create: if isProjectMember(request.resource.data.projectId) || isAdmin();
+      allow update, delete: if isProjectMember(resource.data.projectId) || isAdmin();
     }
 
     match /tasks/{taskId} {
-      allow read: if isProjectMember(resource.data.projectId);
-      allow create: if isProjectMember(request.resource.data.projectId);
-      allow update, delete: if isProjectMember(resource.data.projectId);
+      allow read: if isProjectMember(resource.data.projectId) || isAdmin();
+      allow create: if isProjectMember(request.resource.data.projectId) || isAdmin();
+      allow update, delete: if isProjectMember(resource.data.projectId) || isAdmin();
 
       match /comments/{commentId} {
         allow read: if isSignedIn();

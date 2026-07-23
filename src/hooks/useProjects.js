@@ -5,8 +5,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
 
-/** All projects the given user belongs to. */
-export function useProjects(uid) {
+/**
+ * Projects the given user belongs to — or, for admins, every project that
+ * exists, since admins can browse and join any project without being a
+ * member first.
+ */
+export function useProjects(uid, { isAdmin = false } = {}) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(!!uid);
 
@@ -17,7 +21,9 @@ export function useProjects(uid) {
       return;
     }
     setLoading(true);
-    const q = query(collection(db, 'projects'), where('memberIds', 'array-contains', uid), orderBy('name', 'asc'));
+    const q = isAdmin
+      ? query(collection(db, 'projects'), orderBy('name', 'asc'))
+      : query(collection(db, 'projects'), where('memberIds', 'array-contains', uid), orderBy('name', 'asc'));
     const unsub = onSnapshot(q, (snap) => {
       setProjects(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -26,13 +32,16 @@ export function useProjects(uid) {
       setLoading(false);
     });
     return () => unsub();
-  }, [uid]);
+  }, [uid, isAdmin]);
 
+  // The creator isn't added as a member automatically — an admin creating a
+  // project for a team doesn't necessarily work in it themselves; they join
+  // explicitly afterwards (self-join, below) if they need to.
   const createProject = async (name, createdBy) => {
     const ref = await addDoc(collection(db, 'projects'), {
       name: name.trim(),
       createdBy,
-      memberIds: [createdBy],
+      memberIds: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

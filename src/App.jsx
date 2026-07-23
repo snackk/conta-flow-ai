@@ -26,7 +26,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 
-import { formatCompletionComment, getFullName } from './utils/taskLogic.js';
+import { buildTemplateTaskTitle, formatCompletionComment, getFullName, nextTemplateDueDate } from './utils/taskLogic.js';
 import { uploadTaskImage } from './utils/uploadImage.js';
 
 const SIDEBAR_COLLAPSED_KEY = 'contaflow:sidebarCollapsed';
@@ -46,7 +46,7 @@ function AppShell() {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
-  const { users } = useUsers();
+  const { users } = useUsers(!!profile?.uid);
   const { templates, createTemplate, updateTemplate, deleteTemplate } = useTaskTemplates(currentProjectId);
   const { tasks, tasksById, createTask, updateTask, deleteTask } = useTasks(currentProjectId);
   const { clients, createClient, updateClient, deleteClient } = useClients(currentProjectId);
@@ -108,6 +108,21 @@ function AppShell() {
 
   const handleUploadImage = (file) => uploadTaskImage(file, profile.uid);
 
+  const handleCreateTemplate = async (data) => {
+    const templateId = await createTemplate(data, profile?.uid);
+    const dueDate = data.recurrence?.enabled ? nextTemplateDueDate(new Date(), data.recurrence.dayOfMonth) : '';
+    await Promise.all(clients.map((client) => createTask({
+      title: buildTemplateTaskTitle(client.name, data.name),
+      description: data.description,
+      clientId: client.id,
+      dueDate,
+      assignedTo: profile?.uid,
+      templateId,
+      color: data.color,
+      recurrence: data.recurrence,
+    }, profile?.uid)));
+  };
+
   const goToTab = (tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); };
 
   const renderContent = () => {
@@ -130,7 +145,9 @@ function AppShell() {
         return (
           <TemplatesPage
             templates={templates}
-            onCreate={(data) => createTemplate(data, profile?.uid)}
+            clientsCount={clients.length}
+            onUploadImage={handleUploadImage}
+            onCreate={handleCreateTemplate}
             onUpdate={updateTemplate}
             onDelete={deleteTemplate}
           />
@@ -145,6 +162,7 @@ function AppShell() {
           />
         );
       case 'projects':
+        if (!isAdmin) return null;
         return (
           <ProjectsPage
             projects={projects}
@@ -194,7 +212,7 @@ function AppShell() {
           )}
         </div>
 
-        {projects.length > 1 && (
+        {isAdmin && projects.length > 1 && (
           <button
             onClick={() => goToTab('projects')}
             title={currentProject?.name}
@@ -209,7 +227,9 @@ function AppShell() {
           <NavItem icon={<KanbanSquare />} label="Quadro de Tarefas" active={activeTab === 'board'} onClick={() => goToTab('board')} collapsed={collapsed} />
           <NavItem icon={<LayoutTemplate />} label="Modelos de Tarefa" active={activeTab === 'templates'} onClick={() => goToTab('templates')} collapsed={collapsed} />
           <NavItem icon={<Contact />} label="Clientes" active={activeTab === 'clients'} onClick={() => goToTab('clients')} collapsed={collapsed} />
-          <NavItem icon={<FolderKanban />} label="Projetos" active={activeTab === 'projects'} onClick={() => goToTab('projects')} collapsed={collapsed} />
+          {isAdmin && (
+            <NavItem icon={<FolderKanban />} label="Projetos" active={activeTab === 'projects'} onClick={() => goToTab('projects')} collapsed={collapsed} />
+          )}
         </nav>
 
         <div className={`border-t border-slate-100 dark:border-slate-700 shrink-0 ${collapsed ? 'p-2' : 'p-4'}`}>
@@ -263,7 +283,7 @@ function AppShell() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 safe-pb bg-slate-50/50 dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
+          <div className={`${activeTab === 'board' ? 'max-w-full' : 'max-w-6xl'} mx-auto h-full flex flex-col`}>
             {renderContent()}
           </div>
         </div>
@@ -273,7 +293,6 @@ function AppShell() {
         open={taskModalOpen}
         task={editingTask}
         users={projectUsers}
-        templates={templates}
         tasks={tasks}
         clients={clients}
         currentProfile={profile}
