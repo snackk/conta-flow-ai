@@ -38,7 +38,7 @@ function AboutPage() {
             <Coffee className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-bold text-slate-800 dark:text-slate-100">Pagar-me um café</h2>
+            <h2 className="font-bold text-slate-800 dark:text-slate-100">Oferece-me um café</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">Se esta aplicação lhe é útil, considere apoiar o seu desenvolvimento.</p>
           </div>
         </div>
