@@ -107,20 +107,24 @@ function TemplateModal({ open, template, onClose, onSave }) {
                 onChange={(e) => setForm((f) => ({ ...f, recurrenceEnabled: e.target.checked }))}
                 className="w-4 h-4 rounded accent-indigo-600"
               />
-              Recorrente (reinicia mensalmente)
+              Recorrente (renova mensalmente)
             </label>
             {form.recurrenceEnabled && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                Reinicia todos os meses no dia
-                <input
-                  type="number"
-                  min={1}
-                  max={28}
-                  value={form.recurrenceDay}
-                  onChange={(e) => setForm((f) => ({ ...f, recurrenceDay: e.target.value }))}
-                  className="w-16 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-center"
-                />
-              </div>
+              <>
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  Data de entrega: dia
+                  <input
+                    type="number"
+                    min={1}
+                    max={28}
+                    value={form.recurrenceDay}
+                    onChange={(e) => setForm((f) => ({ ...f, recurrenceDay: e.target.value }))}
+                    className="w-16 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-center"
+                  />
+                  de cada mês
+                </div>
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">Ao ser terminada, a tarefa renova automaticamente no dia 1 do mês seguinte.</p>
+              </>
             )}
           </div>
 

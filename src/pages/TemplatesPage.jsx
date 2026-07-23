@@ -49,7 +49,7 @@ function TemplatesPage({ templates, onCreate, onUpdate, onDelete }) {
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-bold text-slate-800 dark:text-slate-100">{tpl.name}</h3>
                 {tpl.recurrence?.enabled && (
-                  <span title={`Reinicia no dia ${tpl.recurrence.dayOfMonth}`} className="text-slate-400 dark:text-slate-500 shrink-0">
+                  <span title={`Data de entrega: dia ${tpl.recurrence.dayOfMonth} de cada mês`} className="text-slate-400 dark:text-slate-500 shrink-0">
                     <Repeat className="w-4 h-4" />
                   </span>
                 )}
@@ -57,7 +57,7 @@ function TemplatesPage({ templates, onCreate, onUpdate, onDelete }) {
               {tpl.description && <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-3">{tpl.description}</p>}
 
               {tpl.recurrence?.enabled && (
-                <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-3">Reinicia todos os meses no dia {tpl.recurrence.dayOfMonth}</p>
+                <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-3">Entrega no dia {tpl.recurrence.dayOfMonth} de cada mês · renova dia 1</p>
               )}
 
               <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
