@@ -9,9 +9,9 @@ function storageKey(uid) {
 }
 
 export function ProjectProvider({ children }) {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const uid = profile?.uid;
-  const projectsApi = useProjects(uid);
+  const projectsApi = useProjects(uid, { isAdmin });
   const { projects, loading } = projectsApi;
 
   const [currentProjectId, setCurrentProjectIdState] = useState(() => {

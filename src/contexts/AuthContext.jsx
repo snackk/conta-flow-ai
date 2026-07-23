@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword,
+  signInWithPopup, signOut, updateProfile,
+} from 'firebase/auth';
 import {
   arrayUnion, collection, deleteDoc, doc, getCountFromServer, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc,
   writeBatch,
@@ -19,6 +22,12 @@ function splitDisplayName(displayName = '') {
 function inviteDocId(email) {
   return (email || '').trim().toLowerCase();
 }
+
+// Set synchronously (before any await) by registerWithEmail so the onAuthStateChanged
+// bootstrap below can pick up the entered name instead of the auth user's displayName,
+// which updateProfile() may not have finished writing back by the time that handler
+// reads it — a real race, since both kick off as soon as the account is created.
+let pendingRegistrationName = null;
 
 /**
  * Merges any pending project invites for this email into the invited
@@ -74,7 +83,8 @@ export function AuthProvider({ children }) {
       const existing = await getDoc(userRef);
 
       if (!existing.exists()) {
-        const { firstName, lastName } = splitDisplayName(user.displayName || '');
+        const { firstName, lastName } = pendingRegistrationName || splitDisplayName(user.displayName || '');
+        pendingRegistrationName = null;
         // The very first person to ever sign in becomes the platform admin,
         // so there's always someone able to create the first project without
         // any manual database setup.
@@ -117,6 +127,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+
+  const loginWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
+
+  const registerWithEmail = async (email, password, firstName, lastName) => {
+    pendingRegistrationName = { firstName, lastName };
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      const displayName = `${firstName} ${lastName}`.trim();
+      if (displayName) {
+        await updateProfile(credential.user, { displayName });
+      }
+      return credential.user;
+    } catch (err) {
+      pendingRegistrationName = null;
+      throw err;
+    }
+  };
+
+  const resetPassword = (email) => sendPasswordResetEmail(auth, email);
+
   const logout = () => signOut(auth);
 
   const updateUserProfile = async (fields) => {
@@ -134,6 +164,9 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!firebaseUser,
     isAdmin: profile?.role === 'admin',
     loginWithGoogle,
+    loginWithEmail,
+    registerWithEmail,
+    resetPassword,
     logout,
     updateUserProfile,
   };

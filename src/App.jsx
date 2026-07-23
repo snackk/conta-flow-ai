@@ -46,7 +46,7 @@ function AppShell() {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
-  const { users } = useUsers();
+  const { users } = useUsers(!!profile?.uid);
   const { templates, createTemplate, updateTemplate, deleteTemplate } = useTaskTemplates(currentProjectId);
   const { tasks, tasksById, createTask, updateTask, deleteTask } = useTasks(currentProjectId);
   const { clients, createClient, updateClient, deleteClient } = useClients(currentProjectId);
@@ -162,6 +162,7 @@ function AppShell() {
           />
         );
       case 'projects':
+        if (!isAdmin) return null;
         return (
           <ProjectsPage
             projects={projects}
@@ -211,7 +212,7 @@ function AppShell() {
           )}
         </div>
 
-        {projects.length > 1 && (
+        {isAdmin && projects.length > 1 && (
           <button
             onClick={() => goToTab('projects')}
             title={currentProject?.name}
@@ -226,7 +227,9 @@ function AppShell() {
           <NavItem icon={<KanbanSquare />} label="Quadro de Tarefas" active={activeTab === 'board'} onClick={() => goToTab('board')} collapsed={collapsed} />
           <NavItem icon={<LayoutTemplate />} label="Modelos de Tarefa" active={activeTab === 'templates'} onClick={() => goToTab('templates')} collapsed={collapsed} />
           <NavItem icon={<Contact />} label="Clientes" active={activeTab === 'clients'} onClick={() => goToTab('clients')} collapsed={collapsed} />
-          <NavItem icon={<FolderKanban />} label="Projetos" active={activeTab === 'projects'} onClick={() => goToTab('projects')} collapsed={collapsed} />
+          {isAdmin && (
+            <NavItem icon={<FolderKanban />} label="Projetos" active={activeTab === 'projects'} onClick={() => goToTab('projects')} collapsed={collapsed} />
+          )}
         </nav>
 
         <div className={`border-t border-slate-100 dark:border-slate-700 shrink-0 ${collapsed ? 'p-2' : 'p-4'}`}>

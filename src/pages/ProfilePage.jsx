@@ -78,7 +78,7 @@ function ProfilePage() {
     <div className="max-w-xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-1">O Meu Perfil</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">A fotografia é obtida automaticamente da sua conta Google.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Se tiver entrado com a Google, a fotografia é obtida automaticamente da sua conta.</p>
       </div>
 
       <div className={cardClass}>
@@ -86,7 +86,7 @@ function ProfilePage() {
           <Avatar profile={profile} size="lg" />
           <div>
             <p className="font-semibold text-slate-800 dark:text-slate-100">{profile?.email}</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Fotografia sincronizada com a conta Google</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{profile?.photoURL ? 'Fotografia sincronizada com a conta Google' : 'Sem fotografia — a usar as iniciais do nome'}</p>
           </div>
         </div>
 
