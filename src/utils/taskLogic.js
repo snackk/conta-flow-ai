@@ -101,6 +101,13 @@ export function getRecurrenceReset(task, now = new Date()) {
   };
 }
 
+/** "Nome da tarefa completado no dia X do mês Y do ano Z", auto-posted as a comment when a templated task is moved to Done. */
+export function formatCompletionComment(taskTitle, now = new Date()) {
+  const monthName = now.toLocaleDateString('pt-PT', { month: 'long' });
+  const monthCapitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  return `${taskTitle} completado no dia ${now.getDate()} do mês ${monthCapitalized} do ano ${now.getFullYear()}`;
+}
+
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(`${dateStr}T00:00:00`);
