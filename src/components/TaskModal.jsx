@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
-import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, formatDate, nextTemplateDueDate } from '../utils/taskLogic.js';
+import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, formatDate } from '../utils/taskLogic.js';
 import AssigneePicker from './AssigneePicker.jsx';
 import ClientModal from './ClientModal.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
@@ -34,7 +34,7 @@ function SidebarField({ label, action, children, hint }) {
   );
 }
 
-function TaskModal({ open, task, users, templates, tasks, clients, currentProfile, onUploadImage, onCreateClient, onClose, onSave, onDelete }) {
+function TaskModal({ open, task, users, tasks, clients, currentProfile, onUploadImage, onCreateClient, onClose, onSave, onDelete }) {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -64,23 +64,6 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
   const handleCreateClient = async (data) => {
     const newClientId = await onCreateClient(data);
     setForm((f) => ({ ...f, clientId: newClientId }));
-  };
-
-  const applyTemplate = (templateId) => {
-    const tpl = templates.find((t) => t.id === templateId);
-    setForm((f) => {
-      const recurrenceEnabled = tpl ? !!tpl.recurrence?.enabled : f.recurrenceEnabled;
-      const recurrenceDay = tpl?.recurrence?.dayOfMonth || f.recurrenceDay;
-      return {
-        ...f,
-        templateId,
-        title: f.title || tpl?.name || '',
-        color: tpl?.color || f.color,
-        recurrenceEnabled,
-        recurrenceDay,
-        dueDate: recurrenceEnabled ? nextTemplateDueDate(new Date(), recurrenceDay) : f.dueDate,
-      };
-    });
   };
 
   const setRecurrenceEnabled = (enabled) => {
@@ -232,19 +215,6 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
                   <option value="">Nenhuma</option>
                   {otherTasks.map((t) => (
                     <option key={t.id} value={t.id}>{t.title}</option>
-                  ))}
-                </select>
-              </SidebarField>
-
-              <SidebarField label="Modelo de Tarefa">
-                <select
-                  value={form.templateId}
-                  onChange={(e) => applyTemplate(e.target.value)}
-                  className={fieldClass}
-                >
-                  <option value="">Sem modelo</option>
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
               </SidebarField>

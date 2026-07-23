@@ -30,7 +30,7 @@ export function useTaskTemplates(projectId) {
   }, [projectId]);
 
   const createTemplate = async (data, createdBy) => {
-    await addDoc(collection(db, COLLECTION), {
+    const ref = await addDoc(collection(db, COLLECTION), {
       projectId,
       name: data.name,
       description: data.description || '',
@@ -40,6 +40,7 @@ export function useTaskTemplates(projectId) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    return ref.id;
   };
 
   const updateTemplate = async (templateId, data) => {

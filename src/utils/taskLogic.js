@@ -101,6 +101,11 @@ export function getRecurrenceReset(task, now = new Date()) {
   };
 }
 
+/** "Cliente - Título do Modelo", used to name each task generated from a task template for a client. */
+export function buildTemplateTaskTitle(clientName, templateTitle) {
+  return `${clientName} - ${templateTitle}`;
+}
+
 /** "Nome da tarefa completado no dia X do mês Y do ano Z", auto-posted as a comment when a templated task is moved to Done. */
 export function formatCompletionComment(taskTitle, now = new Date()) {
   const monthName = now.toLocaleDateString('pt-PT', { month: 'long' });

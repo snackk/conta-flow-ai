@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ArrowDownAZ, ArrowDownWideNarrow, ArrowDownZA, ArrowUpNarrowWide, ChevronDown, ChevronRight, Palmtree, Plus,
+  ArrowDownAZ, ArrowDownWideNarrow, ArrowDownZA, ArrowUpNarrowWide, ChevronDown, ChevronRight,
+  ChevronsLeft, ChevronsRight, Palmtree, Plus,
 } from 'lucide-react';
 import Avatar from '../components/Avatar.jsx';
 import TaskCard from '../components/TaskCard.jsx';
-import { STAGE_LABELS, STAGE_ORDER, STAGES, formatDate, getFullName, isUserOOO } from '../utils/taskLogic.js';
+import { STAGE_LABELS, STAGES, formatDate, getFullName, isUserOOO } from '../utils/taskLogic.js';
 
 const COLUMN_TO_PROGRESS = {
   [STAGES.BLOCKED]: 'todo',
@@ -12,6 +13,10 @@ const COLUMN_TO_PROGRESS = {
   [STAGES.IN_PROGRESS]: 'in_progress',
   [STAGES.DONE]: 'done',
 };
+
+const BOARD_STAGE_ORDER = [STAGES.READY, STAGES.BLOCKED, STAGES.IN_PROGRESS, STAGES.DONE];
+
+const ASSIGNEE_COL_WIDTH = { collapsed: '72px', expanded: '220px' };
 
 function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId, onNewTask, onEditTask, onMoveTask }) {
   const templatesById = useMemo(() => new Map(templates.map((tpl) => [tpl.id, tpl])), [templates]);
@@ -24,6 +29,7 @@ function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId,
   const [sortOrder, setSortOrder] = useState('due_asc');
   const [nameSortDir, setNameSortDir] = useState('asc');
   const [expandedOverrides, setExpandedOverrides] = useState({});
+  const [assigneeColExpanded, setAssigneeColExpanded] = useState(false);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -192,20 +198,30 @@ function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId,
       </div>
 
       <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60">
-        <div className="min-w-[1100px]">
-          <div className="grid sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700" style={{ gridTemplateColumns: '260px repeat(4, minmax(240px, 1fr))' }}>
-            <div className="px-4 py-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-              Responsável
+        <div className="min-w-full">
+          <div className="grid sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700" style={{ gridTemplateColumns: `${assigneeColExpanded ? ASSIGNEE_COL_WIDTH.expanded : ASSIGNEE_COL_WIDTH.collapsed} repeat(4, minmax(0, 1fr))` }}>
+            <div className={`py-3 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 ${assigneeColExpanded ? 'px-4' : 'px-2 justify-center'}`}>
+              {assigneeColExpanded && <span className="truncate">Responsável</span>}
+              {assigneeColExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setNameSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+                  title="Alternar ordem alfabética dos responsáveis"
+                  className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  {nameSortDir === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowDownZA className="w-3.5 h-3.5" />}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setNameSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-                title="Alternar ordem alfabética dos responsáveis"
-                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                onClick={() => setAssigneeColExpanded((v) => !v)}
+                title={assigneeColExpanded ? 'Colapsar coluna de responsável' : 'Expandir coluna de responsável'}
+                className={`p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${assigneeColExpanded ? 'ml-auto' : ''}`}
               >
-                {nameSortDir === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowDownZA className="w-3.5 h-3.5" />}
+                {assigneeColExpanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
               </button>
             </div>
-            {STAGE_ORDER.map((stage) => (
+            {BOARD_STAGE_ORDER.map((stage) => (
               <div key={stage} className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 border-l border-slate-100 dark:border-slate-700">
                 {STAGE_LABELS[stage]}
               </div>
@@ -222,22 +238,38 @@ function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId,
             const totalCount = lane.tasks.length;
             const oooActive = lane.user ? isUserOOO(lane.user) : false;
 
+            const laneTitle = oooActive
+              ? `${getFullName(lane.user)} — De férias até ${formatDate(lane.user.oooEnd)} — reatribua as tarefas urgentes a outro responsável`
+              : `${lane.user ? getFullName(lane.user) : 'Sem responsável'}${totalCount > 0 ? ` (${totalCount} ${totalCount === 1 ? 'tarefa' : 'tarefas'})` : ''}`;
+
             return (
-              <div key={laneKey} className="grid border-b border-slate-100 dark:border-slate-700 last:border-b-0" style={{ gridTemplateColumns: '260px repeat(4, minmax(240px, 1fr))' }}>
+              <div key={laneKey} className="grid border-b border-slate-100 dark:border-slate-700 last:border-b-0" style={{ gridTemplateColumns: `${assigneeColExpanded ? ASSIGNEE_COL_WIDTH.expanded : ASSIGNEE_COL_WIDTH.collapsed} repeat(4, minmax(0, 1fr))` }}>
                 <button
                   type="button"
                   onClick={() => toggleLane(laneKey)}
-                  title={oooActive ? `De férias até ${formatDate(lane.user.oooEnd)} — reatribua as tarefas urgentes a outro responsável` : undefined}
-                  className={`px-4 py-4 flex items-center gap-2 transition-colors text-left border-l-4 ${oooActive ? 'bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100/70 dark:hover:bg-amber-500/20 border-amber-400' : 'bg-slate-50/60 dark:bg-slate-700/40 hover:bg-slate-100/70 dark:hover:bg-slate-700/70 border-transparent'}`}
+                  title={laneTitle}
+                  className={`py-4 flex items-center transition-colors text-left border-l-4 ${assigneeColExpanded ? 'px-4 gap-2' : 'px-2 justify-center gap-1'} ${oooActive ? 'bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100/70 dark:hover:bg-amber-500/20 border-amber-400' : 'bg-slate-50/60 dark:bg-slate-700/40 hover:bg-slate-100/70 dark:hover:bg-slate-700/70 border-transparent'}`}
                 >
-                  {expanded ? (
+                  {assigneeColExpanded && (expanded ? (
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                   ) : (
                     <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                  )}
-                  {lane.user ? (
+                  ))}
+                  <span className="relative shrink-0">
+                    <Avatar profile={lane.user} size="sm" />
+                    {!assigneeColExpanded && totalCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-300 bg-slate-200 dark:bg-slate-600 rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center ring-2 ring-white dark:ring-slate-800">
+                        {totalCount}
+                      </span>
+                    )}
+                    {!assigneeColExpanded && oooActive && (
+                      <span className="absolute -bottom-1 -right-1 bg-amber-400 rounded-full p-0.5 ring-2 ring-white dark:ring-slate-800">
+                        <Palmtree className="w-2 h-2 text-white" />
+                      </span>
+                    )}
+                  </span>
+                  {assigneeColExpanded && (lane.user ? (
                     <>
-                      <Avatar profile={lane.user} size="sm" />
                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{getFullName(lane.user)}</span>
                       {oooActive && (
                         <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/20 rounded-full px-2 py-0.5 shrink-0">
@@ -247,15 +279,15 @@ function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId,
                     </>
                   ) : (
                     <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 italic">Sem responsável</span>
-                  )}
-                  {!expanded && totalCount > 0 && (
+                  ))}
+                  {assigneeColExpanded && !expanded && totalCount > 0 && (
                     <span className="ml-auto text-[11px] font-bold text-slate-400 dark:text-slate-400 bg-slate-200/70 dark:bg-slate-600/70 rounded-full px-2 py-0.5 shrink-0">
                       {totalCount}
                     </span>
                   )}
                 </button>
 
-                {STAGE_ORDER.map((stage) => {
+                {BOARD_STAGE_ORDER.map((stage) => {
                   const cellId = `${laneKey}:${stage}`;
                   const cellTasks = sortTasks(lane.tasks.filter((t) => t.stage === stage));
                   const isHover = hoverCell === cellId;

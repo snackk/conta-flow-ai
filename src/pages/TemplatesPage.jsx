@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
 import TemplateModal from '../components/TemplateModal.jsx';
 
-function TemplatesPage({ templates, onCreate, onUpdate, onDelete }) {
+function TemplatesPage({ templates, clientsCount, onUploadImage, onCreate, onUpdate, onDelete }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
 
@@ -28,7 +28,7 @@ function TemplatesPage({ templates, onCreate, onUpdate, onDelete }) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Modelos de Tarefa</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Defina modelos reutilizáveis (ex: SAFT) com cor e recorrência predefinidas.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cada modelo cria automaticamente uma tarefa para todos os clientes, atribuída a si.</p>
         </div>
         <button
           onClick={openCreate}
@@ -82,6 +82,8 @@ function TemplatesPage({ templates, onCreate, onUpdate, onDelete }) {
       <TemplateModal
         open={modalOpen}
         template={editingTemplate}
+        clientsCount={clientsCount}
+        onUploadImage={onUploadImage}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />

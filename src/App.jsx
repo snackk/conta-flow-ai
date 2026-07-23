@@ -26,7 +26,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 
-import { formatCompletionComment, getFullName } from './utils/taskLogic.js';
+import { buildTemplateTaskTitle, formatCompletionComment, getFullName, nextTemplateDueDate } from './utils/taskLogic.js';
 import { uploadTaskImage } from './utils/uploadImage.js';
 
 const SIDEBAR_COLLAPSED_KEY = 'contaflow:sidebarCollapsed';
@@ -108,6 +108,21 @@ function AppShell() {
 
   const handleUploadImage = (file) => uploadTaskImage(file, profile.uid);
 
+  const handleCreateTemplate = async (data) => {
+    const templateId = await createTemplate(data, profile?.uid);
+    const dueDate = data.recurrence?.enabled ? nextTemplateDueDate(new Date(), data.recurrence.dayOfMonth) : '';
+    await Promise.all(clients.map((client) => createTask({
+      title: buildTemplateTaskTitle(client.name, data.name),
+      description: data.description,
+      clientId: client.id,
+      dueDate,
+      assignedTo: profile?.uid,
+      templateId,
+      color: data.color,
+      recurrence: data.recurrence,
+    }, profile?.uid)));
+  };
+
   const goToTab = (tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); };
 
   const renderContent = () => {
@@ -130,7 +145,9 @@ function AppShell() {
         return (
           <TemplatesPage
             templates={templates}
-            onCreate={(data) => createTemplate(data, profile?.uid)}
+            clientsCount={clients.length}
+            onUploadImage={handleUploadImage}
+            onCreate={handleCreateTemplate}
             onUpdate={updateTemplate}
             onDelete={deleteTemplate}
           />
@@ -263,7 +280,7 @@ function AppShell() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 safe-pb bg-slate-50/50 dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
+          <div className={`${activeTab === 'board' ? 'max-w-full' : 'max-w-6xl'} mx-auto h-full flex flex-col`}>
             {renderContent()}
           </div>
         </div>
@@ -273,7 +290,6 @@ function AppShell() {
         open={taskModalOpen}
         task={editingTask}
         users={projectUsers}
-        templates={templates}
         tasks={tasks}
         clients={clients}
         currentProfile={profile}
