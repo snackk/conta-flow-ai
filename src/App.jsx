@@ -250,7 +250,7 @@ function AppShell() {
             >
               <Info className="w-5 h-5" />
             </button>
-            <NotificationBell tasks={tasks} users={projectUsers} onOpenTask={openEditTask} />
+            <NotificationBell tasks={tasks} users={projectUsers} clients={clients} onOpenTask={openEditTask} />
             <button onClick={() => goToTab('profile')} className="lg:hidden"><Avatar profile={profile} size="sm" /></button>
           </div>
         </header>
