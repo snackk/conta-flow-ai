@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getInitials } from '../utils/taskLogic.js';
+import { getInitials, getInitialsFromName } from '../utils/taskLogic.js';
 
 const SIZE_CLASSES = {
   sm: 'w-8 h-8 text-xs',
@@ -15,11 +15,11 @@ function stringToHue(str = '') {
   return Math.abs(hash) % 360;
 }
 
-function Avatar({ profile, size = 'md', title }) {
+function Avatar({ profile, name, size = 'md', title }) {
   const [imgError, setImgError] = useState(false);
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
-  const initials = getInitials(profile?.firstName, profile?.lastName);
-  const hue = stringToHue(profile?.uid || profile?.email || initials);
+  const initials = profile ? getInitials(profile.firstName, profile.lastName) : getInitialsFromName(name);
+  const hue = stringToHue(profile?.uid || profile?.email || name || initials);
 
   if (profile?.photoURL && !imgError) {
     return (

@@ -15,6 +15,7 @@ import { addTaskComment } from './hooks/useComments.js';
 import Avatar from './components/Avatar.jsx';
 import NavItem from './components/NavItem.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
+import SplashScreen from './components/SplashScreen.jsx';
 import TaskModal from './components/TaskModal.jsx';
 import ProjectSelectScreen from './components/ProjectSelectScreen.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
@@ -74,7 +75,7 @@ function AppShell() {
   }
 
   if (!isReady) {
-    return <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">A carregar...</div>;
+    return <SplashScreen />;
   }
 
   if (!isAuthenticated) {
