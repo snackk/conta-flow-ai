@@ -4,6 +4,7 @@ import {
   ChevronsLeft, ChevronsRight, Palmtree, Plus,
 } from 'lucide-react';
 import Avatar from '../components/Avatar.jsx';
+import FilterSearchPicker from '../components/FilterSearchPicker.jsx';
 import TaskCard from '../components/TaskCard.jsx';
 import { STAGE_LABELS, STAGES, formatDate, getFullName, isUserOOO } from '../utils/taskLogic.js';
 
@@ -21,6 +22,14 @@ const ASSIGNEE_COL_WIDTH = { collapsed: '72px', expanded: '220px' };
 function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId, onNewTask, onEditTask, onMoveTask }) {
   const templatesById = useMemo(() => new Map(templates.map((tpl) => [tpl.id, tpl])), [templates]);
   const clientsById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const assigneeOptions = useMemo(
+    () => users.map((u) => ({ value: u.uid, label: getFullName(u), profile: u })),
+    [users]
+  );
+  const clientOptions = useMemo(
+    () => clients.map((c) => ({ value: c.id, label: c.name, avatarName: c.name })),
+    [clients]
+  );
   const [dragTaskId, setDragTaskId] = useState(null);
   const [hoverCell, setHoverCell] = useState(null);
 
@@ -143,31 +152,23 @@ function BoardPage({ tasks, tasksById, users, templates, clients, currentUserId,
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Responsável</label>
-          <select
+          <FilterSearchPicker
+            options={assigneeOptions}
             value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-          >
-            <option value="all">Todos</option>
-            {users.map((u) => (
-              <option key={u.uid} value={u.uid}>{getFullName(u)}</option>
-            ))}
-            <option value="unassigned">Sem responsável</option>
-          </select>
+            onChange={setAssigneeFilter}
+            placeholder="Pesquisar por nome..."
+            extraOption={{ value: 'unassigned', label: 'Sem responsável' }}
+          />
         </div>
 
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Cliente</label>
-          <select
+          <FilterSearchPicker
+            options={clientOptions}
             value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-          >
-            <option value="all">Todos</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            onChange={setClientFilter}
+            placeholder="Pesquisar por nome..."
+          />
         </div>
 
         <div className="flex items-center gap-2">

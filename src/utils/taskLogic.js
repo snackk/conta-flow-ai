@@ -21,6 +21,15 @@ export function getInitials(firstName = '', lastName = '') {
   return initials || '?';
 }
 
+/** Initials from a single free-form name (e.g. a client's name), for entities with no first/last name split. */
+export function getInitialsFromName(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0].charAt(0);
+  const second = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return `${first}${second}`.toUpperCase() || '?';
+}
+
 export function getFullName(profile) {
   if (!profile) return 'Utilizador';
   const name = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();

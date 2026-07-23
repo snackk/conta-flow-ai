@@ -248,7 +248,7 @@ function TaskModal({ open, task, users, tasks, clients, currentProfile, onUpload
                     onChange={(e) => setRecurrenceEnabled(e.target.checked)}
                     className="w-4 h-4 rounded accent-indigo-600"
                   />
-                  Tarefa cíclica (recorrente)
+                  Tarefa recorrente
                 </label>
                 {form.recurrenceEnabled && (
                   <>
