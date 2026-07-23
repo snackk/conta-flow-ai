@@ -18,9 +18,10 @@ const URGENCY_STYLES = {
   },
 };
 
-function NotificationBell({ tasks, users, onOpenTask }) {
+function NotificationBell({ tasks, users, clients, onOpenTask }) {
   const [open, setOpen] = useState(false);
   const usersById = useMemo(() => new Map(users.map((u) => [u.uid, u])), [users]);
+  const clientsById = useMemo(() => new Map((clients || []).map((c) => [c.id, c])), [clients]);
 
   const notifications = useMemo(() => {
     return tasks
@@ -69,6 +70,7 @@ function NotificationBell({ tasks, users, onOpenTask }) {
                 {notifications.map(({ task, urgency }) => {
                   const style = URGENCY_STYLES[urgency];
                   const assignee = usersById.get(task.assignedTo);
+                  const client = clientsById.get(task.clientId);
                   return (
                     <button
                       key={task.id}
@@ -80,7 +82,8 @@ function NotificationBell({ tasks, users, onOpenTask }) {
                       <Avatar profile={assignee} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          {assignee ? getFullName(assignee) : 'Sem responsável'} — {task.title}
+                          {assignee ? getFullName(assignee) : 'Sem responsável'}
+                          {client && <> — {client.name}</>} — {task.title}
                         </p>
                         <p className={`text-xs font-medium mt-0.5 flex items-center gap-1 ${style.text}`}>
                           <Clock className="w-3 h-3" /> {formatDate(task.dueDate)}

@@ -75,21 +75,25 @@ export function nextTemplateDueDate(referenceDate, dayOfMonth) {
 }
 
 /**
- * Recurring tasks reset to 'todo' (re-entering Ready/Blocked) once the
- * cycle's reset day has passed and they haven't already been reset for that
- * cycle. This runs client-side on load/poll rather than via a backend job,
+ * Recurring tasks only ever reset once they've been marked Done — an
+ * unfinished recurring task (e.g. still overdue from last month) keeps its
+ * current due date and stage untouched, it never gets auto-reset out from
+ * under someone. Once Done, the task waits there until the calendar rolls
+ * into a new month (relative to its own due date's month), at which point
+ * it reopens as 'todo' with a fresh due date for the day-of-month on the new
+ * month. This runs client-side on load/poll rather than via a backend job,
  * so the reset only actually happens once some signed-in client is open.
  */
 export function getRecurrenceReset(task, now = new Date()) {
   if (!task.recurrence?.enabled) return null;
+  if (task.progress !== STAGES.DONE) return null;
+  if (!task.dueDate) return null;
+
+  const currentCycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const taskCycleKey = task.dueDate.slice(0, 7);
+  if (taskCycleKey >= currentCycleKey) return null;
 
   const dayOfMonth = task.recurrence.dayOfMonth || 1;
-  const currentCycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const hasPassedResetDay = now.getDate() >= dayOfMonth;
-
-  if (!hasPassedResetDay) return null;
-  if (task.lastCycleKey === currentCycleKey) return null;
-
   return {
     progress: 'todo',
     dueDate: nextDueDateForCycle(now, dayOfMonth),
