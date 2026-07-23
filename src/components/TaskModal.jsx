@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
-import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, formatDate, getFullName, nextTemplateDueDate } from '../utils/taskLogic.js';
+import { DEFAULT_TASK_COLOR, TASK_COLOR_PRESETS, formatDate, nextTemplateDueDate } from '../utils/taskLogic.js';
+import AssigneePicker from './AssigneePicker.jsx';
 import ClientModal from './ClientModal.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
 import TaskComments from './TaskComments.jsx';
@@ -10,7 +11,7 @@ function emptyForm() {
     title: '',
     description: '',
     clientId: '',
-    dueDate: new Date().toISOString().slice(0, 10),
+    dueDate: '',
     assignedTo: '',
     precedingTaskId: '',
     templateId: '',
@@ -197,16 +198,11 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
               </SidebarField>
 
               <SidebarField label="Responsável">
-                <select
+                <AssigneePicker
+                  users={users}
                   value={form.assignedTo}
-                  onChange={(e) => setForm((f) => ({ ...f, assignedTo: e.target.value }))}
-                  className={fieldClass}
-                >
-                  <option value="">Sem responsável</option>
-                  {users.map((u) => (
-                    <option key={u.uid} value={u.uid}>{getFullName(u)}</option>
-                  ))}
-                </select>
+                  onChange={(uid) => setForm((f) => ({ ...f, assignedTo: uid }))}
+                />
               </SidebarField>
 
               <SidebarField
@@ -220,7 +216,6 @@ function TaskModal({ open, task, users, templates, tasks, clients, currentProfil
                 ) : (
                   <input
                     type="date"
-                    required
                     value={form.dueDate}
                     onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
                     className={fieldClass}
