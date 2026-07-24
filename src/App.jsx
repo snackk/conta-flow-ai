@@ -27,7 +27,10 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 
-import { buildTemplateTaskTitle, formatCompletionComment, getFullName, nextTemplateDueDate } from './utils/taskLogic.js';
+import {
+  buildTemplateTaskTitle, formatCompletionComment, getFullName, nextTemplateDueDate,
+  normalizeTemplateGroups, planTemplateApply,
+} from './utils/taskLogic.js';
 import { uploadTaskImage } from './utils/uploadImage.js';
 
 const SIDEBAR_COLLAPSED_KEY = 'contaflow:sidebarCollapsed';
@@ -109,19 +112,40 @@ function AppShell() {
 
   const handleUploadImage = (file) => uploadTaskImage(file, profile.uid);
 
-  const handleCreateTemplate = async (data) => {
-    const templateId = await createTemplate(data, profile?.uid);
-    const dueDate = data.recurrence?.enabled ? nextTemplateDueDate(new Date(), data.recurrence.dayOfMonth) : '';
-    await Promise.all(clients.map((client) => createTask({
-      title: buildTemplateTaskTitle(client.name, data.name),
-      description: data.description,
-      clientId: client.id,
-      dueDate,
-      assignedTo: profile?.uid,
-      templateId,
-      color: data.color,
-      recurrence: data.recurrence,
-    }, profile?.uid)));
+  /**
+   * Runs when the user expands a template card and clicks "Aplicar alterações" — never
+   * automatic. Diffs the template's client groups against its already-generated tasks
+   * (matched by clientId) to create tasks only for clients newly covered by a group, and
+   * update recurrence/due date only on existing tasks whose group config actually changed.
+   */
+  const handleApplyTemplate = async (template) => {
+    const groups = normalizeTemplateGroups(template);
+    const dayOfMonth = template.dayOfMonth || template.recurrence?.dayOfMonth || 1;
+    const allClientIds = clients.map((c) => c.id);
+    const tasksForTemplate = tasks.filter((t) => t.templateId === template.id);
+    const { toCreate, toUpdate } = planTemplateApply(groups, allClientIds, tasksForTemplate, dayOfMonth);
+    const clientsById = new Map(clients.map((c) => [c.id, c]));
+
+    await Promise.all([
+      ...toCreate.map(({ clientId, recurrenceMonths }) => {
+        const client = clientsById.get(clientId);
+        if (!client) return null;
+        return createTask({
+          title: buildTemplateTaskTitle(client.name, template.name),
+          description: template.description,
+          clientId,
+          dueDate: nextTemplateDueDate(new Date(), dayOfMonth, recurrenceMonths),
+          assignedTo: profile?.uid,
+          templateId: template.id,
+          color: template.color,
+          recurrence: { enabled: true, dayOfMonth, intervalMonths: recurrenceMonths },
+        }, profile?.uid);
+      }),
+      ...toUpdate.map(({ taskId, recurrenceMonths }) => updateTask(taskId, {
+        dueDate: nextTemplateDueDate(new Date(), dayOfMonth, recurrenceMonths),
+        recurrence: { enabled: true, dayOfMonth, intervalMonths: recurrenceMonths },
+      })),
+    ].filter(Boolean));
   };
 
   const goToTab = (tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); };
@@ -146,11 +170,13 @@ function AppShell() {
         return (
           <TemplatesPage
             templates={templates}
-            clientsCount={clients.length}
+            clients={clients}
+            tasks={tasks}
             onUploadImage={handleUploadImage}
-            onCreate={handleCreateTemplate}
+            onCreate={(data) => createTemplate(data, profile?.uid)}
             onUpdate={updateTemplate}
             onDelete={deleteTemplate}
+            onApply={handleApplyTemplate}
           />
         );
       case 'clients':

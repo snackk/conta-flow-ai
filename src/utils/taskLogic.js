@@ -74,33 +74,39 @@ export function nextDueDateForCycle(referenceDate, dayOfMonth) {
 }
 
 /**
- * Due date for a newly created recurring task: the given day of the month
- * *following* referenceDate's month (e.g. created in July for day 5 → 5 Aug),
- * since a recurring task is prepared ahead of its next occurrence.
+ * Due date for a newly created recurring task: the given day of the month,
+ * `intervalMonths` after referenceDate's month (e.g. created in July with
+ * interval 1 for day 5 → 5 Aug, interval 3 → 5 Oct), since a recurring task
+ * is prepared ahead of its next occurrence.
  */
-export function nextTemplateDueDate(referenceDate, dayOfMonth) {
+export function nextTemplateDueDate(referenceDate, dayOfMonth, intervalMonths = 1) {
   const d = new Date(referenceDate);
-  return toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, dayOfMonth));
+  return toDateStr(new Date(d.getFullYear(), d.getMonth() + intervalMonths, dayOfMonth));
 }
 
 /**
  * Recurring tasks only ever reset once they've been marked Done — an
- * unfinished recurring task (e.g. still overdue from last month) keeps its
+ * unfinished recurring task (e.g. still overdue from last cycle) keeps its
  * current due date and stage untouched, it never gets auto-reset out from
- * under someone. Once Done, the task waits there until the calendar rolls
- * into a new month (relative to its own due date's month), at which point
- * it reopens as 'todo' with a fresh due date for the day-of-month on the new
- * month. This runs client-side on load/poll rather than via a backend job,
- * so the reset only actually happens once some signed-in client is open.
+ * under someone. Once Done, the task waits there until the calendar reaches
+ * its next scheduled cycle (`intervalMonths` after its due date's month —
+ * 1 for a monthly task, 3 for quarterly, etc.), at which point it reopens as
+ * 'todo' with a fresh due date for the day-of-month on the *current* month
+ * (catching up to now rather than replaying every missed cycle in between).
+ * This runs client-side on load/poll rather than via a backend job, so the
+ * reset only actually happens once some signed-in client is open.
  */
 export function getRecurrenceReset(task, now = new Date()) {
   if (!task.recurrence?.enabled) return null;
   if (task.progress !== STAGES.DONE) return null;
   if (!task.dueDate) return null;
 
+  const intervalMonths = task.recurrence.intervalMonths || 1;
+  const due = new Date(`${task.dueDate}T00:00:00`);
+  const nextCycle = new Date(due.getFullYear(), due.getMonth() + intervalMonths, 1);
+  const nextCycleKey = `${nextCycle.getFullYear()}-${String(nextCycle.getMonth() + 1).padStart(2, '0')}`;
   const currentCycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const taskCycleKey = task.dueDate.slice(0, 7);
-  if (taskCycleKey >= currentCycleKey) return null;
+  if (currentCycleKey < nextCycleKey) return null;
 
   const dayOfMonth = task.recurrence.dayOfMonth || 1;
   return {
@@ -113,6 +119,57 @@ export function getRecurrenceReset(task, now = new Date()) {
 /** "Cliente - Título do Modelo", used to name each task generated from a task template for a client. */
 export function buildTemplateTaskTitle(clientName, templateTitle) {
   return `${clientName} - ${templateTitle}`;
+}
+
+export function makeTemplateGroupId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `grp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+export function emptyTemplateGroup() {
+  return { id: makeTemplateGroupId(), allClients: true, clientIds: [], recurrenceMonths: 1 };
+}
+
+/**
+ * Templates saved before per-group client recurrence existed have no `groups` field —
+ * synthesize a single "all clients, monthly" group so they display and apply the same
+ * way going forward, with no separate migration step needed.
+ */
+export function normalizeTemplateGroups(template) {
+  if (template.groups && template.groups.length > 0) return template.groups;
+  return [{ id: 'legacy', allClients: true, clientIds: [], recurrenceMonths: 1 }];
+}
+
+/**
+ * Diffs a template's client groups against its already-generated tasks (matched by
+ * clientId, since a client is only ever meant to hold one active task per template)
+ * to decide what "Aplicar alterações" needs to do: create a task for any client newly
+ * covered by a group, and update the recurrence/due date on existing tasks whose
+ * group recurrence (interval or day-of-month) has changed since they were created.
+ * Clients whose task is already correctly configured are left untouched — this keeps
+ * the plan (and its on-screen preview) empty when there's genuinely nothing to do.
+ */
+export function planTemplateApply(groups, allClientIds, tasksForTemplate, dayOfMonth) {
+  const taskByClientId = new Map(tasksForTemplate.filter((t) => t.clientId).map((t) => [t.clientId, t]));
+  const toCreate = [];
+  const toUpdate = [];
+
+  for (const group of groups) {
+    const targetIds = group.allClients ? allClientIds : group.clientIds;
+    for (const clientId of targetIds) {
+      const existingTask = taskByClientId.get(clientId);
+      if (!existingTask) {
+        toCreate.push({ clientId, recurrenceMonths: group.recurrenceMonths });
+        continue;
+      }
+      const currentInterval = existingTask.recurrence?.intervalMonths || 1;
+      const currentDay = existingTask.recurrence?.dayOfMonth || 1;
+      if (currentInterval !== group.recurrenceMonths || currentDay !== dayOfMonth) {
+        toUpdate.push({ taskId: existingTask.id, recurrenceMonths: group.recurrenceMonths });
+      }
+    }
+  }
+
+  return { toCreate, toUpdate };
 }
 
 /** "Nome da tarefa completado no dia X do mês Y do ano Z", auto-posted as a comment when a templated task is moved to Done. */
