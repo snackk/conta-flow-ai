@@ -30,7 +30,7 @@ function TaskCard({ task, blockerTitle, templateName, clientName, onClick, onDra
             <span title="Tem descrição"><Text className="w-3.5 h-3.5" /></span>
           )}
           {task.recurrence?.enabled && (
-            <span title={`Recorrente, dia ${task.recurrence.dayOfMonth} de cada mês`}><Repeat className="w-4 h-4" /></span>
+            <span title={`Recorrente, dia ${task.recurrence.dayOfMonth} a cada ${task.recurrence.intervalMonths > 1 ? `${task.recurrence.intervalMonths} meses` : 'mês'}`}><Repeat className="w-4 h-4" /></span>
           )}
         </div>
       </div>
